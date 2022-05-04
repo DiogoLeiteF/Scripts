@@ -1,4 +1,4 @@
-#Tic-tac-toe
+# Tic-tac-toe
 
 This is tic-tac-toe terminal game. A project from Codecademy Computer Science path.
 
