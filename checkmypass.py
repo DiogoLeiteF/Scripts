@@ -3,8 +3,6 @@ import sys
 import requests
 
 
-pas = 'password123'
-
 def request_api_data(query_char):
     """get data from site"""
     url = 'https://api.pwnedpasswords.com/range/' + query_char
