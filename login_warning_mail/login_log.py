@@ -3,10 +3,14 @@ import datetime as dt
 from email.message import EmailMessage
 import platform
 import psutil
+from dotenv import load_dotenv
+import os
 
-sender_add='dummypc001@gmail.com' #storing the sender's mail id
-receiver_add='diogoleitefaria@gmail.com' #storing the receiver's mail id
-password='djqzmfnwtfvyzrdo' #storing the password to log in
+load_dotenv()
+
+sender_add=os.getenv('SENDER_ADD') #storing the sender's mail id
+receiver_add=os.getenv('RECEIVER_ADD') #storing the receiver's mail id
+password=os.getenv('PASSWORD') #storing the password to log in
 dtime = dt.datetime.now()
 time = dtime.time()
 date = dtime.date()

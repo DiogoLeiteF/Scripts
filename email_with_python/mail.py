@@ -11,7 +11,7 @@ def send_mail(some_thing, mails):
 
     html = Template(Path('index.html').read_text(encoding='utf8'))
     email = EmailMessage()
-    email['from'] = 'Leite Faria'
+    email['from'] = 'John'
     email['to'] = mails
     email['subject'] = 'Thanks for your purchase.'
 
@@ -20,13 +20,12 @@ def send_mail(some_thing, mails):
     with smtplib.SMTP(host='smtp.gmail.com', port=587) as smtp:
         smtp.ehlo()
         smtp.starttls()
-        smtp.login('dummypc001@gmail.com', 'djqzmfnwtfvyzrdo')
+        smtp.login('dummy@gmail.com', 'djqzmfnwtfvyzrdo')
         smtp.send_message(email)
         print('all good boss!')
 
 
-emails = ['diogoleitefaria@gmail.com',
-          'dummypc1@protonmail.com', 'silentroom10000@gmail.com']
+emails = ['dummy@mail.com',]
 
 for mail in emails:
     mail_split = mail.split('@')
