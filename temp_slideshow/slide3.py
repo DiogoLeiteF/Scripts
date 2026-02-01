@@ -15,7 +15,7 @@ class ImageSlideshow(QWidget):
     def __init__(self):
         super().__init__()
 
-        self.setWindowTitle("Visualizador de Imagens e Vídeos - Slideshow Moderno")
+        self.setWindowTitle("Visualizador de Imagens e Vídeos")
 
         # Área de apresentação
         self.image_label = QLabel(alignment=Qt.AlignCenter)
@@ -44,16 +44,26 @@ class ImageSlideshow(QWidget):
 
         # Label countdown
         self.lbl_countdown = QLabel("Tempo restante: -- s")
-        self.lbl_countdown.setAlignment(Qt.AlignCenter)
+        self.lbl_countdown.setAlignment(Qt.AlignRight)
         self.lbl_countdown.setStyleSheet("font-size: 12px; color: #AAA;")
         self.lbl_countdown.setMaximumHeight(12)
         
         # Label filename
-        self.lbl_filename = QLabel("Ficheiros: 0 ||  Nome: ---")
-        self.lbl_filename.setAlignment(Qt.AlignCenter)
+        self.lbl_filename = QLabel("Nome: ---")
+        self.lbl_filename.setAlignment(Qt.AlignLeft)
         self.lbl_filename.setStyleSheet("font-size: 12px; color: #AAA;")
-        self.lbl_filename.setMaximumHeight(12)
-        self.lbl_filename.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        self.lbl_filename.setMaximumHeight(30)
+        self.lbl_filename.setTextInteractionFlags(
+            Qt.TextSelectableByMouse | 
+            Qt.LinksAccessibleByMouse
+            )
+        self.lbl_filename.setWordWrap(True)
+
+        # Label filecount
+        self.lbl_filecount = QLabel("Ficheiros: 0 ")
+        self.lbl_filename.setAlignment(Qt.AlignLeft)
+        self.lbl_filecount.setStyleSheet("font-size: 12px; color: #AAA;")
+        self.lbl_filecount.setMaximumHeight(12)
 
 
         # Botões
@@ -93,10 +103,16 @@ class ImageSlideshow(QWidget):
         time_layout = QHBoxLayout()
         time_layout.addWidget(self.combo_time)
         time_layout.addWidget(self.spin_custom)
+        time_layout.addWidget(self.btn_start)
 
         options_layout = QHBoxLayout()
         options_layout.addWidget(self.chk_subfolders)
         options_layout.addWidget(self.chk_random)
+        options_layout.addWidget(self.btn_folder)
+        
+        info_layout = QHBoxLayout()
+        info_layout.addWidget(self.lbl_filecount)
+        info_layout.addWidget(self.lbl_countdown)
 
         nav_layout = QHBoxLayout()
         nav_layout.addWidget(self.btn_prev)
@@ -107,16 +123,12 @@ class ImageSlideshow(QWidget):
 
         # Opções (subpastas + random)
         layout.addLayout(options_layout)
-        # Botão de escolher pasta 
-        layout.addWidget(self.btn_folder)
         # Temporizador
         layout.addLayout(time_layout)
-        # Botão iniciar
-        layout.addWidget(self.btn_start)
-        # File Name
-        layout.addWidget(self.lbl_filename)
         # Countdown
-        layout.addWidget(self.lbl_countdown)
+        layout.addWidget(self.lbl_filename)
+        # File info
+        layout.addLayout(info_layout)
         # Área de imagem
         layout.addWidget(self.image_label)
         # Navegação
@@ -151,7 +163,7 @@ class ImageSlideshow(QWidget):
         self.timer.start(interval * 1000)
         self.countdown_timer.start(1000)
 
-        self.lbl_filename.setText(f"Ficheiros: {len(self.files)} ||  Nome: {self.get_filename()}")
+        self.lbl_filename.setText(f"Nome: {self.get_filename()}")
         
     def update_countdown(self):
         if self.time_left > 0:
@@ -213,12 +225,17 @@ class ImageSlideshow(QWidget):
             random.shuffle(files)
         else:
             files = sorted(files)
+         
+        self.lbl_filecount.setText(f"Ficheiros: {len(files)}")
         return files
 
     def get_filename(self):
         raw_filename = self.files[self.index]
-        filename = raw_filename
-        return filename
+        #filename = raw_filename[-70:] if len(raw_filename) > 70 else raw_filename
+        # filename = raw_filename.split("\\")[-3]
+        # return filename
+        return raw_filename
+    
     # -----------------------------
     #   NAVEGAÇÃO
     # -----------------------------
@@ -230,6 +247,7 @@ class ImageSlideshow(QWidget):
         self.show_file()
         if self.btn_pause.text() == "Retomar":
             self.show_file()
+            self.lbl_filename.setText(f"Nome: {self.get_filename()}")
         else:
             self.start_slideshow()
         
@@ -240,6 +258,7 @@ class ImageSlideshow(QWidget):
         self.index = (self.index - 1) % len(self.files)
         if self.btn_pause.text() == "Retomar":
             self.show_file()
+            self.lbl_filename.setText(f"Nome: {self.get_filename()}")
         else:
             self.start_slideshow()
         
