@@ -56,13 +56,27 @@ def recortar_face(path_in, m_lat, m_top, m_bot):
         if crop.size == 0:
             return None, "Recorte vazio"
 
-        # Melhorar qualidade da imagem
+        # ---------------------------------------------------------
+        # SUPER SAMPLING (melhor nitidez)
+        # ---------------------------------------------------------
         crop = cv2.resize(crop, None, fx=1.3, fy=1.3, interpolation=cv2.INTER_CUBIC)
+
+        # ---------------------------------------------------------
+        # GARANTIR ALTURA MÍNIMA DE 500px
+        # ---------------------------------------------------------
+        ch, cw = crop.shape[:2]
+        min_height = 1000
+        if ch < min_height:
+            scale = min_height / ch
+            new_w = int(cw * scale)
+            new_h = min_height
+            crop = cv2.resize(crop, (new_w, new_h), interpolation=cv2.INTER_CUBIC)
 
         return crop, None
 
     except Exception as e:
         return None, str(e)
+
 
 
 # ---------------------------------------------------------
@@ -87,18 +101,18 @@ class App:
 
         # Sliders de margens
         ttk.Label(frame, text="Margem Lateral (%)", font=("Segoe UI", 11)).pack()
-        self.slider_lat = ttk.Scale(frame, from_=0, to=80, orient="horizontal")
-        self.slider_lat.set(30)
+        self.slider_lat = ttk.Scale(frame, from_=0, to=250, orient="horizontal")
+        self.slider_lat.set(60)
         self.slider_lat.pack(fill="x", padx=20)
 
         ttk.Label(frame, text="Margem Superior (%)", font=("Segoe UI", 11)).pack()
-        self.slider_top = ttk.Scale(frame, from_=0, to=100, orient="horizontal")
-        self.slider_top.set(60)
+        self.slider_top = ttk.Scale(frame, from_=0, to=250, orient="horizontal")
+        self.slider_top.set(50)
         self.slider_top.pack(fill="x", padx=20)
 
         ttk.Label(frame, text="Margem Inferior (%)", font=("Segoe UI", 11)).pack()
-        self.slider_bot = ttk.Scale(frame, from_=0, to=150, orient="horizontal")
-        self.slider_bot.set(120)
+        self.slider_bot = ttk.Scale(frame, from_=0, to=550, orient="horizontal")
+        self.slider_bot.set(100)
         self.slider_bot.pack(fill="x", padx=20)
 
         # Botão iniciar
@@ -174,7 +188,15 @@ class App:
                 falhadas.append((img_nome, erro))
             else:
                 out_path = os.path.join(pasta_recortes, img_nome)
-                cv2.imwrite(out_path, crop, [cv2.IMWRITE_JPEG_QUALITY, 98])
+                cv2.imwrite(
+                    out_path,
+                    crop,
+                    [
+                        cv2.IMWRITE_JPEG_QUALITY, 100,
+                        cv2.IMWRITE_JPEG_OPTIMIZE, 1
+                    ]
+                )
+
 
             self.progress["value"] = i
             self.root.update_idletasks()
