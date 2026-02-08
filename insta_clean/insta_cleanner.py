@@ -77,6 +77,28 @@ def recortar_face(path_in, m_lat, m_top, m_bot):
     except Exception as e:
         return None, str(e)
 
+# ---------------------------------------------------------
+# Função redimencionar a imagem para um maximo de 1700px lado maior
+# ---------------------------------------------------------
+def redimensionar_imagem(path_in, max_dim=1700):
+    img = cv2.imread(path_in)
+    if img is None:
+        return None, "Erro ao abrir imagem"
+
+    h, w = img.shape[:2]
+    maior = max(w, h)
+
+    # Se já for menor que o limite, não redimensiona
+    if maior <= max_dim:
+        return img, None
+
+    escala = max_dim / maior
+    new_w = int(w * escala)
+    new_h = int(h * escala)
+
+    resized = cv2.resize(img, (new_w, new_h), interpolation=cv2.INTER_AREA)
+    return resized, None
+
 
 
 # ---------------------------------------------------------
@@ -207,6 +229,47 @@ class App:
                 self.text_erros.insert(tk.END, f"{nome} → {erro}\n")
         else:
             self.text_erros.insert(tk.END, "Todas as imagens foram processadas com sucesso.\n")
+
+
+        # ---------------------------------------------------------
+        # SEGUNDA PASSAGEM: criar versões reduzidas (Resized)
+        # ---------------------------------------------------------
+        self.text_erros.insert(tk.END, "\n--- A criar versões reduzidas ---\n")
+
+        pasta_resized = os.path.join(pasta, "Resized")
+        os.makedirs(pasta_resized, exist_ok=True)
+
+        # Reset da barra de progresso para a segunda fase
+        self.progress["value"] = 0
+        self.progress["maximum"] = total
+
+        for i, img_nome in enumerate(imagens, start=1):
+            caminho = os.path.join(pasta, img_nome)
+
+            resized, erro = redimensionar_imagem(caminho, max_dim=1700)
+
+            if erro or resized is None:
+                self.text_erros.insert(tk.END, f"{img_nome} → {erro}\n")
+                continue
+
+            out_path = os.path.join(pasta_resized, img_nome)
+
+            # Guardar com qualidade 60%
+            cv2.imwrite(
+                out_path,
+                resized,
+                [
+                    cv2.IMWRITE_JPEG_QUALITY, 60,
+                    cv2.IMWRITE_JPEG_OPTIMIZE, 1
+                ]
+            )
+
+            self.progress["value"] = i
+            self.root.update_idletasks()
+
+        self.text_erros.insert(tk.END, "\nVersões reduzidas criadas com sucesso.\n")
+
+
 
         messagebox.showinfo("Concluído", "Processamento finalizado.")
 
