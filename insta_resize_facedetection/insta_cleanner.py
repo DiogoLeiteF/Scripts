@@ -122,20 +122,36 @@ class App:
         self.btn_escolher.pack(pady=10)
 
         # Sliders de margens
-        ttk.Label(frame, text="Margem Lateral (%)", font=("Segoe UI", 11)).pack()
-        self.slider_lat = ttk.Scale(frame, from_=0, to=250, orient="horizontal")
-        self.slider_lat.set(60)
+        self.lat_value = 60
+        self.label_lat = ttk.Label(frame, text=f"Margem Lateral {self.lat_value}", font=("Segoe UI", 11))
+        self.label_lat.pack()
+        self.slider_lat = ttk.Scale(frame, from_=0, to=250, orient="horizontal", command=self.update_label_lat)
+        self.slider_lat.set(self.lat_value)
         self.slider_lat.pack(fill="x", padx=20)
-
-        ttk.Label(frame, text="Margem Superior (%)", font=("Segoe UI", 11)).pack()
-        self.slider_top = ttk.Scale(frame, from_=0, to=250, orient="horizontal")
-        self.slider_top.set(50)
+        
+        self.top_value = 50
+        self.label_top =ttk.Label(frame, text=f"Margem Superior {self.top_value}", font=("Segoe UI", 11))
+        self.label_top.pack()
+        self.slider_top = ttk.Scale(frame, from_=0, to=250, orient="horizontal", command=self.update_label_top)
+        self.slider_top.set(self.top_value)
         self.slider_top.pack(fill="x", padx=20)
 
-        ttk.Label(frame, text="Margem Inferior (%)", font=("Segoe UI", 11)).pack()
-        self.slider_bot = ttk.Scale(frame, from_=0, to=550, orient="horizontal")
-        self.slider_bot.set(100)
+        self.bot_value = 100
+        self.label_bot = ttk.Label(frame, text=f"Margem Inferior {self.bot_value}", font=("Segoe UI", 11))
+        self.label_bot.pack()
+        self.slider_bot = ttk.Scale(frame, from_=0, to=550, orient="horizontal", command=self.update_label_bot)
+        self.slider_bot.set(self.bot_value)
         self.slider_bot.pack(fill="x", padx=20)
+
+        # Escolher qualidade do jpeg
+        self.jpeg_value = 60
+        self.label_jpeg = ttk.Label(frame, text=f"Qualidade Jpeg {self.jpeg_value}%", font=("Segoe UI", 11))
+        self.label_jpeg.pack()
+        self.slider_jpeg = ttk.Scale(frame, from_=0, to=100, orient="horizontal", command=self.update_label_jpeg)
+        self.slider_jpeg.set(60)
+        self.slider_jpeg.pack(fill="x", padx=20)
+        
+        
 
         # Botão iniciar
         self.btn_processar = ttk.Button(frame, text="Iniciar Processamento", command=self.iniciar_processamento, bootstyle="primary")
@@ -163,6 +179,19 @@ class App:
         self.text_erros.config(yscrollcommand=scrollbar.set)
 
         self.pasta = None
+    
+    def update_label_lat(self, value):
+        self.label_lat.config(text=f"Margem Lateral {float(value):.0f}")
+
+    def update_label_top(self, value):
+        self.label_top.config(text=f"Margem Superior {float(value):.0f}")
+
+    def update_label_bot(self, value):
+        self.label_bot.config(text=f"Margem Inferior {float(value):.0f}")
+
+    def update_label_jpeg(self, value):
+        self.label_jpeg.config(text=f"Qualidade Jpeg {float(value):.0f}%")
+
 
     def escolher_pasta(self):
         self.pasta = filedialog.askdirectory()
@@ -200,6 +229,7 @@ class App:
         m_lat = self.slider_lat.get()
         m_top = self.slider_top.get()
         m_bot = self.slider_bot.get()
+        m_jpeg = int(self.slider_jpeg.get())
 
         for i, img_nome in enumerate(imagens, start=1):
             caminho = os.path.join(pasta, img_nome)
@@ -259,7 +289,7 @@ class App:
                 out_path,
                 resized,
                 [
-                    cv2.IMWRITE_JPEG_QUALITY, 60,
+                    cv2.IMWRITE_JPEG_QUALITY, m_jpeg,
                     cv2.IMWRITE_JPEG_OPTIMIZE, 1
                 ]
             )
