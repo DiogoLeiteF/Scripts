@@ -1,10 +1,12 @@
 import os
+import shutil
 import sys
 import cv2
 import random
+from datetime import datetime
 from PySide6.QtWidgets import (
     QApplication, QWidget, QLabel, QPushButton, QVBoxLayout,
-    QFileDialog, QComboBox, QSpinBox, QHBoxLayout, QCheckBox, QSizePolicy
+    QFileDialog, QComboBox, QSpinBox, QHBoxLayout, QCheckBox, QSizePolicy, QMessageBox
 )
 from PySide6.QtGui import QPixmap, QImage
 from PySide6.QtCore import Qt, QTimer
@@ -27,6 +29,7 @@ class ImageSlideshow(QWidget):
         # Lista de ficheiros
         self.files = []
         self.index = 0
+        self.fav_folder = None
 
         # Vídeo
         self.video_cap = None
@@ -79,9 +82,20 @@ class ImageSlideshow(QWidget):
         self.btn_pause = QPushButton("Pausar")
         self.btn_pause.clicked.connect(self.toggle_pause)
 
+        self.btn_delete = QPushButton("Eliminar")
+        self.btn_delete.clicked.connect(self.delete_file)
+
+        self.btn_fav = QPushButton("Favoritos")
+        self.btn_fav.clicked.connect(self.fav_file)
+
         # Temporizador
         self.combo_time = QComboBox()
-        self.combo_time.addItems(["30 segundos", "1 minuto", "Personalizado"])
+        self.combo_time.addItems(["30 segundos", 
+                                  "60 segundos", 
+                                  "90 segundos", 
+                                  "120 segundos", 
+                                  "Personalizado"
+                                  ])
 
         self.spin_custom = QSpinBox()
         self.spin_custom.setRange(1, 3600)
@@ -119,6 +133,10 @@ class ImageSlideshow(QWidget):
         nav_layout.addWidget(self.btn_pause)
         nav_layout.addWidget(self.btn_next)
 
+        del_layout = QHBoxLayout()
+        del_layout.addWidget(self.btn_delete)
+        del_layout.addWidget(self.btn_fav)
+
         layout = QVBoxLayout()
 
         # Opções (subpastas + random)
@@ -133,6 +151,8 @@ class ImageSlideshow(QWidget):
         layout.addWidget(self.image_label)
         # Navegação
         layout.addLayout(nav_layout)
+        # Options
+        layout.addLayout(del_layout)
 
         self.setLayout(layout)
 
@@ -150,8 +170,12 @@ class ImageSlideshow(QWidget):
         # Determinar intervalo
         if self.combo_time.currentText() == "30 segundos":
             interval = 30
-        elif self.combo_time.currentText() == "1 minuto":
+        elif self.combo_time.currentText() == "60 segundos":
             interval = 60
+        if self.combo_time.currentText() == "90 segundos":
+            interval = 90
+        elif self.combo_time.currentText() == "120 segundos":
+            interval = 120
         else:
             interval = self.spin_custom.value()
 
@@ -163,7 +187,7 @@ class ImageSlideshow(QWidget):
         self.timer.start(interval * 1000)
         self.countdown_timer.start(1000)
 
-        self.lbl_filename.setText(f"Nome: {self.get_filename()}")
+        self.lbl_filename.setText(f"{self.get_filename()}")
         
     def update_countdown(self):
         if self.time_left > 0:
@@ -200,6 +224,7 @@ class ImageSlideshow(QWidget):
             return
 
         self.index = 0
+        self.lbl_filename.setText(f"{self.get_filename()}")
         self.show_file()
 
     def scan_folder(self, folder, include_subfolders):
@@ -230,11 +255,73 @@ class ImageSlideshow(QWidget):
         return files
 
     def get_filename(self):
-        raw_filename = self.files[self.index]
-        #filename = raw_filename[-70:] if len(raw_filename) > 70 else raw_filename
-        # filename = raw_filename.split("\\")[-3]
-        # return filename
-        return raw_filename
+        if self.files:
+            raw_filename = self.files[self.index]
+            return raw_filename
+    
+    def delete_file(self):
+        if not self.files:
+            return
+        file = self.files[self.index]
+        save_index = self.index
+        delete_file = QMessageBox.question(self,
+                                           "Confirmar eliminação",
+                                           "Tens a certeza que queres apagar esta imagem?", QMessageBox.Yes | QMessageBox.No
+                                           )
+
+        if delete_file == QMessageBox.Yes:
+            try:
+                os.remove(file)
+                QMessageBox.information(self, "Apagado", "A imagem foi apagada com sucesso.")
+
+                # remover da lista interna
+                del self.files[save_index]
+                
+                # ajustar índice
+                if save_index >= len(self.files):
+                    self.index = 0
+
+                # mostrar próxima imagem
+                if self.files:
+                    self.show_file()
+                else:
+                    self.image_label.clear()
+                    
+                # atualizar labels
+                self.lbl_filecount.setText(f"Ficheiros: {len(self.files)}")
+                self.lbl_filename.setText(f"{self.get_filename()}")
+                
+
+            except Exception as e:
+                QMessageBox.critical(self, "Erro", f"Não foi possível apagar o ficheiro:\n{e}")
+
+    
+    def fav_file(self):
+        if not self.files:
+            return
+        if self.fav_folder == None:
+            if self.btn_pause.text() == "Pausar":
+                self.toggle_pause()
+            self.fav_folder = QFileDialog.getExistingDirectory(self, "Pasta Favoritos")
+            self.btn_fav.setText(f"Favoritos\n {self.fav_folder}")
+            
+        origem = rf"{self.files[self.index]}"
+        destino = os.path.join(self.fav_folder, os.path.basename(origem))
+        if os.path.exists(destino):
+            confirm_duplicate = QMessageBox.question(self, "Confirmar favorito duplicado", "Mesmo nome encontrado, continuaar com a copia?", QMessageBox.Yes | QMessageBox.No)
+            if confirm_duplicate == QMessageBox.Yes:
+                data = datetime.now()
+                data_txt = data.strftime("_%d-%m-%Y_%H%M%S")
+                destino = destino.split(".")
+                data_txt += f".{destino[-1]}"
+                destino = "".join(destino[:-1])
+                destino += data_txt
+            else:
+                return
+        
+        shutil.copy2(origem, destino)
+        QMessageBox.information(self, "Copia", "A imagem foi Copiada para os favoritos.")
+    
     
     # -----------------------------
     #   NAVEGAÇÃO
