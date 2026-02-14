@@ -51,6 +51,16 @@ class ImageSlideshow(QWidget):
         self.lbl_countdown.setStyleSheet("font-size: 12px; color: #AAA;")
         self.lbl_countdown.setMaximumHeight(12)
         
+        # tempo total decorrido
+        self.start_time = None
+        self.elapsed_label = QLabel("Tempo decorrido: 00:00:00")
+        self.elapsed_label.setStyleSheet("font-size: 12px; font-weight: bold; color: #D10000;")
+        self.elapsed_label.setAlignment(Qt.AlignCenter)
+
+        self.elapsed_timer = QTimer()
+        self.elapsed_timer.timeout.connect(self.update_elapsed_time)
+
+        
         # Label filename
         self.lbl_filename = QLabel("Nome: ---")
         self.lbl_filename.setAlignment(Qt.AlignLeft)
@@ -111,7 +121,7 @@ class ImageSlideshow(QWidget):
 
         # Iniciar slideshow
         self.btn_start = QPushButton("Iniciar Slideshow")
-        self.btn_start.clicked.connect(self.start_slideshow)
+        self.btn_start.clicked.connect(self.start_from_btn)
 
         # Layouts
         time_layout = QHBoxLayout()
@@ -126,6 +136,7 @@ class ImageSlideshow(QWidget):
         
         info_layout = QHBoxLayout()
         info_layout.addWidget(self.lbl_filecount)
+        info_layout.addWidget(self.elapsed_label)
         info_layout.addWidget(self.lbl_countdown)
 
         nav_layout = QHBoxLayout()
@@ -186,7 +197,11 @@ class ImageSlideshow(QWidget):
         # Iniciar timers
         self.timer.start(interval * 1000)
         self.countdown_timer.start(1000)
-
+        if self.start_time is None:
+             self.start_time = datetime.now()
+        self.elapsed_timer.start(1000)  # atualiza a cada 1 segundo
+        
+        # update filename
         self.lbl_filename.setText(f"{self.get_filename()}")
         
     def update_countdown(self):
@@ -196,7 +211,26 @@ class ImageSlideshow(QWidget):
         else:
             self.lbl_countdown.setText(f"A mudar... time_left {self.time_left}")
             self.start_slideshow()
+    
+    def start_from_btn(self):
+        self.start_time = datetime.now()
+        self.start_slideshow()
             
+    def update_elapsed_time(self):
+        if self.start_time is None:
+            return
+
+        delta = datetime.now() - self.start_time
+        total_seconds = int(delta.total_seconds())
+
+        horas = total_seconds // 3600
+        minutos = (total_seconds % 3600) // 60
+        segundos = total_seconds % 60
+
+        self.elapsed_label.setText(
+            f"Tempo decorrido: {horas:02d}:{minutos:02d}:{segundos:02d}"
+        )
+
     def toggle_pause(self):
         if self.timer.isActive() or self.video_timer.isActive():
             self.timer.stop()
