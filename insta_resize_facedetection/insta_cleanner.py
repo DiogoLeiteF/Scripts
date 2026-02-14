@@ -20,7 +20,7 @@ app_face.prepare(ctx_id=0, det_size=(640, 640))
 # ---------------------------------------------------------
 # Função de deteção e recorte da face
 # ---------------------------------------------------------
-def recortar_face(path_in, m_lat, m_top, m_bot):
+def recortar_face(path_in, m_lat, m_top, m_bot, m_jpeg_crop_min_dim):
     try:
         img = cv2.imread(path_in)
         if img is None:
@@ -62,10 +62,10 @@ def recortar_face(path_in, m_lat, m_top, m_bot):
         crop = cv2.resize(crop, None, fx=1.3, fy=1.3, interpolation=cv2.INTER_CUBIC)
 
         # ---------------------------------------------------------
-        # GARANTIR ALTURA MÍNIMA DE 500px
+        # GARANTIR ALTURA MÍNIMA DE 
         # ---------------------------------------------------------
         ch, cw = crop.shape[:2]
-        min_height = 1000
+        min_height = m_jpeg_crop_min_dim
         if ch < min_height:
             scale = min_height / ch
             new_w = int(cw * scale)
@@ -115,41 +115,84 @@ class App:
         frame = ttk.Frame(root, padding=20)
         frame.pack(fill="both", expand=True)
 
-        ttk.Label(frame, text="Extrator Automático de Faces", font=("Segoe UI", 20, "bold")).pack(pady=10)
+        # ttk.Label(frame, text="Extrator Automático de Faces e redimensionar imagens", font=("Segoe UI", 20, "bold")).pack(pady=10)
 
         # Escolher pasta
         self.btn_escolher = ttk.Button(frame, text="Escolher Pasta de Imagens", command=self.escolher_pasta)
         self.btn_escolher.pack(pady=10)
+        
+        sliders_frame = ttk.Frame(frame)
+        sliders_frame.pack(fill="x", pady=10)
 
+        col1 = ttk.Frame(sliders_frame)
+        col1.pack(side="left", expand=True, fill="x", padx=10)
+
+        col2 = ttk.Frame(sliders_frame)
+        col2.pack(side="left", expand=True, fill="x", padx=10)
+
+        ttk.Label(col1, text="Extrator Automático de Faces", font=("Segoe UI", 14, "bold")).pack(pady=10)
+        
+        self.do_face_crop = tk.BooleanVar(value=True)
+        self.check_face_crop = ttk.Checkbutton(col1, text="Recortar rostos", variable= self.do_face_crop, bootstyle="success-round-toggle")
+        self.check_face_crop.pack(pady=10)
+        
         # Sliders de margens
         self.lat_value = 60
-        self.label_lat = ttk.Label(frame, text=f"Margem Lateral {self.lat_value}", font=("Segoe UI", 11))
+        self.label_lat = ttk.Label(col1, text=f"Margem Lateral {self.lat_value}", font=("Segoe UI", 11))
         self.label_lat.pack()
-        self.slider_lat = ttk.Scale(frame, from_=0, to=250, orient="horizontal", command=self.update_label_lat)
+        self.slider_lat = ttk.Scale(col1, from_=0, to=250, orient="horizontal", command=self.update_label_lat)
         self.slider_lat.set(self.lat_value)
         self.slider_lat.pack(fill="x", padx=20)
         
         self.top_value = 50
-        self.label_top =ttk.Label(frame, text=f"Margem Superior {self.top_value}", font=("Segoe UI", 11))
+        self.label_top =ttk.Label(col1, text=f"Margem Superior {self.top_value}", font=("Segoe UI", 11))
         self.label_top.pack()
-        self.slider_top = ttk.Scale(frame, from_=0, to=250, orient="horizontal", command=self.update_label_top)
+        self.slider_top = ttk.Scale(col1, from_=0, to=250, orient="horizontal", command=self.update_label_top)
         self.slider_top.set(self.top_value)
         self.slider_top.pack(fill="x", padx=20)
 
         self.bot_value = 100
-        self.label_bot = ttk.Label(frame, text=f"Margem Inferior {self.bot_value}", font=("Segoe UI", 11))
+        self.label_bot = ttk.Label(col1, text=f"Margem Inferior {self.bot_value}", font=("Segoe UI", 11))
         self.label_bot.pack()
-        self.slider_bot = ttk.Scale(frame, from_=0, to=550, orient="horizontal", command=self.update_label_bot)
+        self.slider_bot = ttk.Scale(col1, from_=0, to=550, orient="horizontal", command=self.update_label_bot)
         self.slider_bot.set(self.bot_value)
         self.slider_bot.pack(fill="x", padx=20)
 
-        # Escolher qualidade do jpeg
+        # Escolher qualidade do jpeg Crop
+        self.jpeg_value_crop = 80
+        self.label_jpeg_crop = ttk.Label(col1, text=f"Qualidade Jpeg {self.jpeg_value_crop}%", font=("Segoe UI", 11))
+        self.label_jpeg_crop.pack()
+        self.slider_jpeg_crop= ttk.Scale(col1, from_=0, to=100, orient="horizontal", command=self.update_label_jpeg_crop)
+        self.slider_jpeg_crop.set(self.jpeg_value_crop)
+        self.slider_jpeg_crop.pack(fill="x", padx=20)
+        
+        self.jpeg_value_max_dim_crop = 600
+        self.label_jpeg_max_dim_crop = ttk.Label(col1, text=f"Aresta maior {self.jpeg_value_max_dim_crop}px", font=("Segoe UI", 11))
+        self.label_jpeg_max_dim_crop.pack()
+        self.slider_jpeg_min_dim_crop = ttk.Scale(col1, from_=100, to=2500, orient="horizontal", command=self.update_label_jpeg_min_dim_crop)
+        self.slider_jpeg_min_dim_crop.set(self.jpeg_value_max_dim_crop)
+        self.slider_jpeg_min_dim_crop.pack(fill="x", padx=20)
+
+        ttk.Label(col2, text="Redimensionar imagens", font=("Segoe UI", 14, "bold")).pack(pady=10)
+
+        self.do_resize = tk.BooleanVar(value=True)
+        self.check_resize = ttk.Checkbutton(col2, text="Redimensionar", variable= self.do_resize, bootstyle="success-round-toggle")
+        self.check_resize.pack(pady=10)
+        
+        # Escolher qualidade do jpeg Resize
         self.jpeg_value = 60
-        self.label_jpeg = ttk.Label(frame, text=f"Qualidade Jpeg {self.jpeg_value}%", font=("Segoe UI", 11))
+        self.label_jpeg = ttk.Label(col2, text=f"Qualidade Jpeg {self.jpeg_value}%", font=("Segoe UI", 11))
         self.label_jpeg.pack()
-        self.slider_jpeg = ttk.Scale(frame, from_=0, to=100, orient="horizontal", command=self.update_label_jpeg)
+        self.slider_jpeg = ttk.Scale(col2, from_=0, to=100, orient="horizontal", command=self.update_label_jpeg)
         self.slider_jpeg.set(60)
         self.slider_jpeg.pack(fill="x", padx=20)
+
+        self.jpeg_value_max_dim = 1700
+        self.label_jpeg_max_dim = ttk.Label(col2, text=f"Aresta maior {self.jpeg_value_max_dim}px", font=("Segoe UI", 11))
+        self.label_jpeg_max_dim.pack()
+        self.slider_jpeg_max_dim = ttk.Scale(col2, from_=100, to=2500, orient="horizontal", command=self.update_label_jpeg_max_dim)
+        self.slider_jpeg_max_dim.set(self.jpeg_value_max_dim)
+        self.slider_jpeg_max_dim.pack(fill="x", padx=20)
         
         
 
@@ -180,6 +223,7 @@ class App:
 
         self.pasta = None
     
+    # Crop
     def update_label_lat(self, value):
         self.label_lat.config(text=f"Margem Lateral {float(value):.0f}")
 
@@ -189,8 +233,18 @@ class App:
     def update_label_bot(self, value):
         self.label_bot.config(text=f"Margem Inferior {float(value):.0f}")
 
+    def update_label_jpeg_crop(self, value):
+        self.label_jpeg_crop.config(text=f"Qualidade Jpeg {float(value):.0f}%")
+   
+    def update_label_jpeg_min_dim_crop(self, value):
+        self.label_jpeg_max_dim_crop.config(text=f"Aresta maior, minimo  {float(value):.0f}px")
+    
+    # Resize
     def update_label_jpeg(self, value):
         self.label_jpeg.config(text=f"Qualidade Jpeg {float(value):.0f}%")
+        
+    def update_label_jpeg_max_dim(self, value):
+        self.label_jpeg_max_dim.config(text=f"Aresta maior  {float(value):.0f}px")
 
 
     def escolher_pasta(self):
@@ -224,81 +278,90 @@ class App:
         self.progress["maximum"] = total
 
         falhadas = []
+        if self.do_face_crop.get():
+            # Ler margens do GUI
+            m_lat = self.slider_lat.get()
+            m_top = self.slider_top.get()
+            m_bot = self.slider_bot.get()
+            m_jpeg_crop = int(self.slider_jpeg_crop.get())
+            m_jpeg_crop_min_dim = int(self.slider_jpeg_min_dim_crop.get())
 
-        # Ler margens do GUI
-        m_lat = self.slider_lat.get()
-        m_top = self.slider_top.get()
-        m_bot = self.slider_bot.get()
-        m_jpeg = int(self.slider_jpeg.get())
 
-        for i, img_nome in enumerate(imagens, start=1):
-            caminho = os.path.join(pasta, img_nome)
+            for i, img_nome in enumerate(imagens, start=1):
+                caminho = os.path.join(pasta, img_nome)
 
-            crop, erro = recortar_face(caminho, m_lat, m_top, m_bot)
+                crop, erro = recortar_face(caminho, m_lat, m_top, m_bot, m_jpeg_crop_min_dim)
 
-            if erro or crop is None:
-                falhadas.append((img_nome, erro))
+                if erro or crop is None:
+                    falhadas.append((img_nome, erro))
+                else:
+                    out_path = os.path.join(pasta_recortes, img_nome)
+                    cv2.imwrite(
+                        out_path,
+                        crop,
+                        [
+                            cv2.IMWRITE_JPEG_QUALITY, m_jpeg_crop,
+                            cv2.IMWRITE_JPEG_OPTIMIZE, 1
+                        ]
+                    )
+
+
+                self.progress["value"] = i
+                self.root.update_idletasks()
+
+            if falhadas:
+                self.text_erros.insert(tk.END, "Imagens não processadas:\n\n")
+                for nome, erro in falhadas:
+                    self.text_erros.insert(tk.END, f"{nome} → {erro}\n")
             else:
-                out_path = os.path.join(pasta_recortes, img_nome)
-                cv2.imwrite(
-                    out_path,
-                    crop,
-                    [
-                        cv2.IMWRITE_JPEG_QUALITY, 100,
-                        cv2.IMWRITE_JPEG_OPTIMIZE, 1
-                    ]
-                )
-
-
-            self.progress["value"] = i
-            self.root.update_idletasks()
-
-        if falhadas:
-            self.text_erros.insert(tk.END, "Imagens não processadas:\n\n")
-            for nome, erro in falhadas:
-                self.text_erros.insert(tk.END, f"{nome} → {erro}\n")
-        else:
-            self.text_erros.insert(tk.END, "Todas as imagens foram processadas com sucesso.\n")
+                self.text_erros.insert(tk.END, "Todas as imagens foram processadas com sucesso.\n")
+        else: 
+            self.text_erros.insert(tk.END, "\nRecorte ignorado (checkbox desligado).\n")
 
 
         # ---------------------------------------------------------
         # SEGUNDA PASSAGEM: criar versões reduzidas (Resized)
         # ---------------------------------------------------------
-        self.text_erros.insert(tk.END, "\n--- A criar versões reduzidas ---\n")
+        if self.do_resize.get():
+            m_jpeg = int(self.slider_jpeg.get())
+            m_jpeg_max_dim = int(self.slider_jpeg_max_dim.get())
+            
+            self.text_erros.insert(tk.END, "\n--- A criar versões reduzidas ---\n")
 
-        pasta_resized = os.path.join(pasta, "Resized")
-        os.makedirs(pasta_resized, exist_ok=True)
+            pasta_resized = os.path.join(pasta, "Resized")
+            os.makedirs(pasta_resized, exist_ok=True)
 
-        # Reset da barra de progresso para a segunda fase
-        self.progress["value"] = 0
-        self.progress["maximum"] = total
+            # Reset da barra de progresso para a segunda fase
+            self.progress["value"] = 0
+            self.progress["maximum"] = total
 
-        for i, img_nome in enumerate(imagens, start=1):
-            caminho = os.path.join(pasta, img_nome)
+            for i, img_nome in enumerate(imagens, start=1):
+                caminho = os.path.join(pasta, img_nome)
 
-            resized, erro = redimensionar_imagem(caminho, max_dim=1700)
+                resized, erro = redimensionar_imagem(caminho, max_dim=m_jpeg_max_dim)
 
-            if erro or resized is None:
-                self.text_erros.insert(tk.END, f"{img_nome} → {erro}\n")
-                continue
+                if erro or resized is None:
+                    self.text_erros.insert(tk.END, f"{img_nome} → {erro}\n")
+                    continue
 
-            out_path = os.path.join(pasta_resized, img_nome)
+                out_path = os.path.join(pasta_resized, img_nome)
 
-            # Guardar com qualidade 60%
-            cv2.imwrite(
-                out_path,
-                resized,
-                [
-                    cv2.IMWRITE_JPEG_QUALITY, m_jpeg,
-                    cv2.IMWRITE_JPEG_OPTIMIZE, 1
-                ]
-            )
+                # Guardar com qualidade 60%
+                cv2.imwrite(
+                    out_path,
+                    resized,
+                    [
+                        cv2.IMWRITE_JPEG_QUALITY, m_jpeg,
+                        cv2.IMWRITE_JPEG_OPTIMIZE, 1
+                    ]
+                )
 
-            self.progress["value"] = i
-            self.root.update_idletasks()
+                self.progress["value"] = i
+                self.root.update_idletasks()
 
-        self.text_erros.insert(tk.END, "\nVersões reduzidas criadas com sucesso.\n")
-
+            self.text_erros.insert(tk.END, "\nVersões reduzidas criadas com sucesso.\n")
+        else:
+            self.text_erros.insert(tk.END, "\nRedimensionamento ignorado (checkbox desligado).\n")
 
 
         messagebox.showinfo("Concluído", "Processamento finalizado.")

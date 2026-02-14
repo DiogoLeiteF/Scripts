@@ -1,0 +1,1 @@
+powershell -ExecutionPolicy Bypass -File "%~dp0run_insta_resize.ps1"
