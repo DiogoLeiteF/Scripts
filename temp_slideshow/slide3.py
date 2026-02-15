@@ -62,7 +62,7 @@ class ImageSlideshow(QWidget):
 
         
         # Label filename
-        self.lbl_filename = QLabel("Nome: ---")
+        self.lbl_filename = QLabel("Caminho: ---")
         self.lbl_filename.setAlignment(Qt.AlignLeft)
         self.lbl_filename.setStyleSheet("font-size: 12px; color: #AAA;")
         self.lbl_filename.setMaximumHeight(30)
@@ -368,7 +368,7 @@ class ImageSlideshow(QWidget):
         self.show_file()
         if self.btn_pause.text() == "Retomar":
             self.show_file()
-            self.lbl_filename.setText(f"Nome: {self.get_filename()}")
+            self.lbl_filename.setText(f"{self.get_filename()}")
         else:
             self.start_slideshow()
         
@@ -377,9 +377,10 @@ class ImageSlideshow(QWidget):
         if not self.files:
             return
         self.index = (self.index - 1) % len(self.files)
+        self.show_file()
         if self.btn_pause.text() == "Retomar":
             self.show_file()
-            self.lbl_filename.setText(f"Nome: {self.get_filename()}")
+            self.lbl_filename.setText(f"{self.get_filename()}")
         else:
             self.start_slideshow()
         
